@@ -1,40 +1,17 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Stop every SGLang component we can start. Works whether you launched with
-# ./start.sh (EAGLE), ./start-dspark.sh (DSpark), or ./start-mtp-8889.sh.
-# Idempotent: anything that isn't running is skipped with a message.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CONTAINER_NAME="qwen3.8-27b-sglang"
 
-CONTAINER_NAME="qwen3.8-27b-sglang"        # main engine (start.sh / start-dspark.sh)
-MTP_CONTAINER_NAME="qwen3.8-27b-sglang-mtp" # MTP engine (start-mtp-8889.sh)
-PID_FILE=".sglang.pid"
-MTP_PID_FILE=".sglang-mtp.pid"
-LOG_FILE=".sglang.log"
+if docker ps --format '{{.Names}}' | grep -qx "${CONTAINER_NAME}"; then
+  echo "Stopping active Qwen instance..."
+  docker stop "${CONTAINER_NAME}"
+elif docker ps -a --format '{{.Names}}' | grep -qx "${CONTAINER_NAME}"; then
+  echo "Qwen SGLang container is already stopped."
+else
+  echo "Qwen SGLang container does not exist."
+fi
 
-command -v docker >/dev/null 2>&1 || {
-  echo "docker is not on PATH"
-  exit 1
-}
-
-stop_container() {
-  local name="$1" pidfile="$2"
-  if ! docker ps -a --format '{{.Names}}' | grep -qx "${name}"; then
-    echo "Container ${name} does not exist; nothing to stop"
-    rm -f "${pidfile}"
-    return
-  fi
-  if docker ps --format '{{.Names}}' | grep -qx "${name}"; then
-    echo "Stopping container ${name}..."
-    docker stop "${name}" >/dev/null
-    echo "[$(date -Is)] container ${name} stopped" >> "${LOG_FILE}"
-    echo "Stopped ${name}."
-  else
-    echo "Container ${name} is not running"
-  fi
-  rm -f "${pidfile}"
-  # Leave the stopped container in place; the next start script removes it,
-  # so `docker logs ${name}` stays available for post-mortem.
-}
-
-stop_container "${CONTAINER_NAME}" "${PID_FILE}"
-stop_container "${MTP_CONTAINER_NAME}" "${MTP_PID_FILE}"
+rm -f "${SCRIPT_DIR}/state/active-container" "${SCRIPT_DIR}/state/active-profile"
+echo "No Qwen SGLang instance is running; the stopped container was preserved."

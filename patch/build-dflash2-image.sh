@@ -22,8 +22,13 @@ esac
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 base_image=lmsysorg/sglang:qwen38-27b
-stage="$(mktemp -d)"
-trap 'rm -rf "${stage}"' EXIT
+# Throwaway sandbox in /tmp; trap deletes it when the image is built.
+build_root="$(mktemp -d /tmp/dflash2-build.XXXXXX)"
+stage="${build_root}/docker-stage"
+src_clone="${build_root}/sglang-src"
+mkdir -p "${stage}"
+cleanup_build() { rm -rf "${build_root}"; }
+trap cleanup_build EXIT
 
 if [[ "${mode}" == "minimal" ]]; then
   overlay="${script_dir}/overlay-dflash2"
@@ -49,23 +54,24 @@ if [[ "${mode}" == "minimal" ]]; then
 else
   src_commit=c14312a66
   full_sha=c14312a66420b75ca9a11bf1817c4db1fa26b097
-  if [[ ! -d /tmp/sglang-src/.git ]]; then
-    echo "cloning sglang (blobless) ..."
-    git clone --filter=blob:none --no-checkout https://github.com/sgl-project/sglang.git /tmp/sglang-src
+  if [[ ! -d "${src_clone}/.git" ]]; then
+    echo "cloning sglang (blobless) into sandbox .build ..."
+    mkdir -p "$(dirname "${src_clone}")"
+    git clone --filter=blob:none --no-checkout https://github.com/sgl-project/sglang.git "${src_clone}"
   fi
-  git -C /tmp/sglang-src -c remote.origin.promisor=true -c fetch.filter=blob:none \
+  git -C "${src_clone}" -c remote.origin.promisor=true -c fetch.filter=blob:none \
       fetch origin "${full_sha}" --depth 1 >/dev/null 2>&1 || true
-  git -C /tmp/sglang-src checkout "${full_sha}" >/dev/null 2>&1
-  git -C /tmp/sglang-src reset --hard HEAD >/dev/null 2>&1 || true
+  git -C "${src_clone}" checkout "${full_sha}" >/dev/null 2>&1
+  git -C "${src_clone}" reset --hard HEAD >/dev/null 2>&1 || true
   # NVFP4 head handling for the DFLASH selector: run the quantized head in
   # place via lm_head.quant_method.apply (see dflash2_nvfp4_head.patch). No
   # dense dequant copy — a previous dequant-once approach allocated ~2.5-5 GB
   # at draft-graph capture and hard-rebooted the box.
   if [[ -f "${script_dir}/dflash2_nvfp4_head.patch" ]]; then
-    git -C /tmp/sglang-src apply --whitespace=nowarn "${script_dir}/dflash2_nvfp4_head.patch"
+    git -C "${src_clone}" apply --whitespace=nowarn "${script_dir}/dflash2_nvfp4_head.patch"
   fi
   mkdir -p "${stage}/python/sglang"
-  cp -r /tmp/sglang-src/python/sglang/. "${stage}/python/sglang/"
+  cp -r "${src_clone}/python/sglang/." "${stage}/python/sglang/"
   {
     echo "FROM ${base_image}"
     echo "COPY python /sgl-workspace/sglang/python"
