@@ -1,22 +1,20 @@
-# Ignore everything, except these tracked files
+# Keep the root surface intentionally small: one checkpoint installer, two
+# instance selectors, one stop command, one internal launcher, and recovery assets.
 *
-!start.sh
-!start-dspark.sh
-!stop.sh
-!README.md
-!CHANGELOG.md
-!.env.sample
-!LICENSE
 !.gitignore
-!bench/
-!bench/bench.sh
-!bench/ndec.py
-# DFlash2 path (2026-08-19): serving script, image builds, and the overlay
-!start-dflash.sh
-# DFlash2 build machinery (self-contained builder + patch + overlay)
+!LICENSE
+!README.md
+!install-abliterated.sh
+!start-original.sh
+!start-abliterated.sh
+!stop.sh
+!lib/
+!lib/serve-dflash.sh
+!tests/
+!tests/*.sh
 !patch/
 !patch/**
-# Deliberately NOT whitelisted: hybrid scripts (start-hybrid.sh,
-# start-mtp-8889.sh, hybrid-router.py) and analysis docs (DS4F/KIMI/GROK/
-# TIER_*). HANDOFF.md stays local — never un-ignore it.
-HANDOFF.md
+!classifier.json
+!tools/
+!tools/*.py
+!tests/*.py
