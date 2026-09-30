@@ -1,0 +1,18 @@
+{
+  "image": "sha256:4183465428fbda06090c0b50fc909a3b3ba24beed8365b366679722508e3981e",
+  "container": "qwen27-classifier",
+  "host": "spark-0444",
+  "port": 30001,
+  "model": "qwen3.8-27b-classifier",
+  "checkpoint": "models/original-nvfp4",
+  "runtime": "runtime/sglang",
+  "mem_fraction_static": 0.45,
+  "min_mem_available_gib": 70,
+  "context_length": 8192,
+  "max_total_tokens": 16384,
+  "max_running_requests": 4,
+  "max_mamba_cache_size": 20,
+  "source_checkpoint": "/models/qwen3.8-27b-sglang/original-radixark-nvfp4",
+  "remote_directory": "qwen27-classifier",
+  "upstream_commit": "826f15bf9c8be2bd358c389724e9681f73c9d841"
+}

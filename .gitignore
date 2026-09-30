@@ -14,3 +14,7 @@
 !tests/*.sh
 !patch/
 !patch/**
+!classifier.json
+!tools/
+!tools/*.py
+!tests/*.py
